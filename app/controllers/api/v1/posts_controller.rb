@@ -41,7 +41,7 @@ module Api
       end
 
       def post_params
-        params.require(:post).permit(:title, :body)
+        params.require(:post).permit(:title, :content, :category, tags: [])
       end
     end
   end
