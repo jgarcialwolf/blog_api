@@ -90,6 +90,8 @@ GEM
       reline (>= 0.3.8)
     drb (2.2.1)
     erubi (1.13.1)
+    faker (3.5.1)
+      i18n (>= 1.8.11, < 2)
     globalid (1.2.1)
       activesupport (>= 6.1)
     i18n (1.14.7)
@@ -190,6 +192,10 @@ GEM
       zeitwerk (~> 2.6)
     rainbow (3.1.1)
     rake (13.2.1)
+    ransack (4.3.0)
+      activerecord (>= 6.1.5)
+      activesupport (>= 6.1.5)
+      i18n
     rdoc (6.12.0)
       psych (>= 4.0.0)
     regexp_parser (2.10.0)
@@ -253,9 +259,11 @@ DEPENDENCIES
   bootsnap
   brakeman
   debug
+  faker
   oj_serializers (~> 2.0, >= 2.0.3)
   puma (>= 5.0)
   rails (~> 7.2.2, >= 7.2.2.1)
+  ransack
   rubocop-rails-omakase
   sqlite3 (>= 1.4)
   tzinfo-data
