@@ -5,17 +5,17 @@ module Api
 
       def index
         posts = Post.all
-        render json: posts
+        render json: PostSerializer.many(posts)
       end
 
       def show
-        render json: @post
+        render json: PostSerializer.one(@post)
       end
 
       def create
         post = Post.new(post_params)
         if post.save
-          render json: post, status: :created
+          render json: PostSerializer.one(post), status: :created
         else
           render json: { errors: post.errors.full_messages }, status: :unprocessable_entity
         end
@@ -23,7 +23,7 @@ module Api
 
       def update
         if @post.update(post_params)
-          render json: @post
+          render json: PostSerializer.one(@post)
         else
           render json: { errors: @post.errors.full_messages }, status: :unprocessable_entity
         end
