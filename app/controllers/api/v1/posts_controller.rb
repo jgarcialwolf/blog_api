@@ -4,7 +4,8 @@ module Api
       before_action :set_post, only: %i[show update destroy]
 
       def index
-        posts = Post.all
+        @q = Post.ransack(params[:q])
+        posts = @q.result(distinct: true)
         render json: PostSerializer.many(posts)
       end
 
