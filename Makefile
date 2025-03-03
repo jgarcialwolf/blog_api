@@ -15,7 +15,7 @@ bundle: env ## Run `bundle install` if necessary
 
 db_prepare: env ## Ensure database is created, migrated, and seeded
 	@docker compose exec api bin/rails db:create
-	@docker compose exec api bin/rails db:migrate:with_data
+	@docker compose exec api bin/rails db:migrate
 	@docker compose exec api bin/rails db:seed
 
 prepare_all: .docker-build env bundle db_prepare
