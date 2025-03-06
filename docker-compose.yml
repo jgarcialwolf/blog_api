@@ -1,0 +1,178 @@
+version: '2.17.2'
+
+services:
+  api:
+    tty: true
+    stdin_open: true
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: tail -f /dev/null
+    networks:
+      - blog
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/api
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PASSWORD=password
+      - DATABASE_USER_NAME=postgres
+      - RAILS_PORT=3000
+      - REDIS_URL=redis://redis:6379/0
+    working_dir: /api
+    depends_on:
+      - db
+      - redis
+
+  db:
+    build:
+      context: docker/postgres
+      dockerfile: Dockerfile.postgres
+    networks:
+      - blog
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: password
+
+  psql:
+    build:
+      context: docker/postgres
+      dockerfile: Dockerfile.postgres
+    entrypoint: psql
+    stdin_open: true
+    tty: true
+    networks:
+      - blog
+    environment:
+      PGDATABASE: crm_development
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: password
+    depends_on:
+      - db
+
+  redis:
+    image: redis:alpine
+    networks:
+      - blog
+    ports:
+      - "6379:6379"
+
+  sidekiq:
+    tty: true
+    stdin_open: true
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: tail -f /dev/null
+    volumes:
+      - ./:/api
+    networks:
+      - blog
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PASSWORD=password
+      - DATABASE_USER_NAME=postgres
+      - RAILS_PORT=3000
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+    container_name: es-local-dev-blog
+    volumes:
+      - dev-elasticsearch:/usr/share/elasticsearch/data
+    networks:
+      - blog
+    ports:
+      - 127.0.0.1:9200:9200
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=password
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.license.self_generated.type=trial
+      - xpack.ml.use_auto_machine_memory_percent=true
+      - ES_JAVA_OPTS=-Xms128m -Xmx2g
+      - cluster.routing.allocation.disk.watermark.low=1gb
+      - cluster.routing.allocation.disk.watermark.high=1gb
+      - cluster.routing.allocation.disk.watermark.flood_stage=1gb
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --output /dev/null --silent --head --fail -u elastic:password http://elasticsearch:9200",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  kibana_settings:
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+    container_name: kibana_settings_blog
+    restart: 'no'
+    command: >
+      bash -c '
+        echo "Setup the kibana_system password";
+        start_time=$$(date +%s);
+        timeout=60;
+        until curl -s -u "elastic:password" -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"password\"}" -H "Content-Type: application/json" | grep -q "^{}"; do
+          if [ $$(($$(date +%s) - $$start_time)) -ge $$timeout ]; then
+            echo "Error: Elasticsearch timeout";
+            exit 1;
+          fi;
+          sleep 2;
+        done;
+      '
+    networks:
+      - blog
+
+  kibana:
+    depends_on:
+      kibana_settings:
+        condition: service_completed_successfully
+    image: docker.elastic.co/kibana/kibana:8.17.2
+    container_name: kibana-local-dev-blog
+    volumes:
+      - dev-kibana:/usr/share/kibana/data
+    networks:
+      - blog
+    ports:
+      - 127.0.0.1:5601:5601
+    environment:
+      - SERVER_NAME=kibana
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=password
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=8e3b72508e05135569ace4ed9b96d137
+      - ELASTICSEARCH_PUBLICBASEURL=http://localhost:9200
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://kibana:5601 | grep -q 'HTTP/1.1 302 Found'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+
+networks:
+  blog:
+    driver: bridge
+
+volumes:
+  dev-elasticsearch:
+  dev-kibana:
