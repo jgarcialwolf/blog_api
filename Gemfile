@@ -30,6 +30,7 @@ gem 'ransack'
 gem 'faker'
 gem 'elasticsearch-model'
 gem 'elasticsearch-rails'
+gem 'httparty', '~> 0.22.0'
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
