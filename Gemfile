@@ -30,6 +30,7 @@ gem 'ransack'
 gem 'faker'
 gem 'elasticsearch-model'
 gem 'elasticsearch-rails'
+gem 'pg'
 gem 'httparty', '~> 0.22.0'
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
@@ -48,5 +49,3 @@ group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
 end
-
-
