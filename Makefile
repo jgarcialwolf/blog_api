@@ -18,7 +18,7 @@ db_prepare: env ## Ensure database is created, migrated, and seeded
 	@docker compose exec api bin/rails db:migrate
 	@docker compose exec api bin/rails db:seed
 
-prepare_all: .docker-build env bundle db_prepare
+prepare_all: .docker-build env bundle db_prepare wait_for_es
 
 s: ## Fast start bash shell without environment checks
 	@docker compose exec -it api bash
@@ -66,3 +66,10 @@ annotate_models: ## Annotate models
 
 help: ## Print out this help message
 	@egrep "^([a-zA-Z0-9_-]+):(.*)*##[[:blank:]]*(.*)" $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+wait_for_es: ## Wait until Elasticsearch is available
+	@until curl --silent --fail http://elasticsearch:9200; do \
+		echo "Waiting for Elasticsearch..."; \
+		sleep 2; \
+	done; \
+	echo "Elasticsearch is ready!"

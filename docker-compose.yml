@@ -1,5 +1,3 @@
-version: '2.17.2'
-
 services:
   api:
     tty: true
